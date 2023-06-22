@@ -3,6 +3,60 @@
 <head>
   <title>Editor</title>
   <style>
+    body {
+      font-family: 'Open Sans', sans-serif;
+    }
+
+    .tabs {
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #f2f2f2;
+      border: 1px solid #ccc;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background-color: #ccc;
+    }
+
+    .form-container {
+      margin-bottom: 20px;
+    }
+
+    .form-container h2 {
+      margin-top: 0;
+    }
+
+    .form-container label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .form-container input[type="text"],
+    .form-container select {
+      width: 300px;
+      padding: 5px;
+      margin-bottom: 10px;
+    }
+
+    .form-container button {
+      padding: 8px 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .error-message {
+      color: red;
+      font-weight: bold;
+    }
+
     /* Estilos para las tarjetas */
     .card {
       border: 1px solid #ccc;
@@ -21,8 +75,8 @@
     }
   </style>
   <!-- Agregar referencia a la biblioteca de Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.0.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.0.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database.js"></script>
 </head>
 <body>
   <div class="tabs">
@@ -53,24 +107,25 @@
       <option value="update_build">update_build</option>
     </select><br>
     <button onclick="submitForm()">Submit</button>
-    <p id="error-message"></p>
+    <p class="error-message" id="error-message"></p>
   </div>
 
-  <div id="manager" class="form-container" style="display: none;">
+  <div id="manager" class="form-container">
+    <!-- Formulario del Manager -->
     <h2>Manager Tab</h2>
     <div id="cards-container"></div>
   </div>
 
   <script>
-    // Configurar la conexión con Firebase
+    // Configuración de Firebase
     var firebaseConfig = {
-      apiKey: "AIzaSyBwZYFB2Hv2iuiNBHdKMXX0boVhJFPEunk",
-      authDomain: "editor-test-4c47e.firebaseapp.com",
-      databaseURL: "https://editor-test-4c47e-default-rtdb.firebaseio.com",
-      projectId: "editor-test-4c47e",
-      storageBucket: "editor-test-4c47e.appspot.com",
-      messagingSenderId: "465959812936",
-      appId: "1:465959812936:web:4216ba3ad0af767882bd7d"
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_AUTH_DOMAIN",
+      databaseURL: "TU_DATABASE_URL",
+      projectId: "TU_PROJECT_ID",
+      storageBucket: "TU_STORAGE_BUCKET",
+      messagingSenderId: "TU_MESSAGING_SENDER_ID",
+      appId: "TU_APP_ID"
     };
 
     // Inicializar la aplicación de Firebase
@@ -164,11 +219,26 @@
       var updateDescription = document.getElementById("updateDescription").value;
       var updateType = document.getElementById("updateType").value;
 
-      // Obtener el próximo ID disponible
-      getNextId(function(nextId) {
+      // Validar los campos
+      if (
+        endDate === "" ||
+        lastModifiedDate === "" ||
+        newVersion === "" ||
+        noticeData === "" ||
+        startDate === "" ||
+        updateDescription === "" ||
+        updateType === ""
+      ) {
+        document.getElementById("error-message").textContent =
+          "Por favor, complete todos los campos.";
+        return;
+      }
+
+      // Generar el ID del formulario
+      getNextId(function(id) {
         // Crear un objeto con los datos del formulario
         var formData = {
-          id: nextId.toString(),
+          id: id,
           endDate: endDate,
           lastModifiedDate: lastModifiedDate,
           newVersion: newVersion,
@@ -179,11 +249,13 @@
           timestamp: firebase.database.ServerValue.TIMESTAMP
         };
 
-        // Guardar los datos en Firebase
-        var newFormRef = database.ref("forms").push();
-        newFormRef.set(formData)
+        // Guardar los datos en la base de datos
+        var formsRef = database.ref("forms");
+        formsRef
+          .push()
+          .set(formData)
           .then(function() {
-            // Limpiar los campos del formulario después de guardar los datos
+            // Limpiar los campos del formulario
             document.getElementById("endDate").value = "";
             document.getElementById("lastModifiedDate").value = "";
             document.getElementById("newVersion").value = "";
@@ -195,7 +267,8 @@
             document.getElementById("error-message").textContent = "";
           })
           .catch(function(error) {
-            document.getElementById("error-message").textContent = "Error al guardar los datos: " + error.message;
+            document.getElementById("error-message").textContent =
+              "Error al guardar los datos: " + error.message;
           });
       });
     }
