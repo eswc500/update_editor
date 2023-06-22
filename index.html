@@ -3,6 +3,7 @@
 <head>
   <title>Editor</title>
   <style>
+    /* Estilos para las tarjetas */
      * {
       box-sizing: border-box;
     }
@@ -92,9 +93,9 @@
       margin: 5px 0;
     }
   </style>
- <!-- Agregar referencia a la biblioteca de Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <!-- Agregar referencia a la biblioteca de Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.0.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.1/firebase-database.js"></script>
 </head>
 <body>
   <div class="tabs">
@@ -104,6 +105,28 @@
 
   <div id="editor" class="form-container">
     <!-- Formulario del Editor -->
+    <h2>Editor Tab</h2>
+    <label for="endDate">End Date:</label>
+    <input type="text" id="endDate" required><br>
+    <label for="id">ID:</label>
+    <input type="text" id="id" disabled><br>
+    <label for="lastModifiedDate">Last Modified Date:</label>
+    <input type="text" id="lastModifiedDate" required><br>
+    <label for="newVersion">New Version:</label>
+    <input type="text" id="newVersion" required><br>
+    <label for="noticeData">Notice Data:</label>
+    <input type="text" id="noticeData" required><br>
+    <label for="startDate">Start Date:</label>
+    <input type="text" id="startDate" required><br>
+    <label for="updateDescription">Update Description:</label>
+    <input type="text" id="updateDescription" required><br>
+    <label for="updateType">Update Type:</label>
+    <select id="updateType" required>
+      <option value="update_addressable">update_addressable</option>
+      <option value="update_build">update_build</option>
+    </select><br>
+    <button onclick="submitForm()">Submit</button>
+    <p id="error-message"></p>
   </div>
 
   <div id="manager" class="form-container" style="display: none;">
@@ -115,12 +138,12 @@
     // Configurar la conexión con Firebase
     var firebaseConfig = {
       apiKey: "AIzaSyBwZYFB2Hv2iuiNBHdKMXX0boVhJFPEunk",
-	  authDomain: "editor-test-4c47e.firebaseapp.com",
-	  databaseURL: "https://editor-test-4c47e-default-rtdb.firebaseio.com",
-	  projectId: "editor-test-4c47e",
-	  storageBucket: "editor-test-4c47e.appspot.com",
-	  messagingSenderId: "465959812936",
-	  appId: "1:465959812936:web:4216ba3ad0af767882bd7d"
+      authDomain: "editor-test-4c47e.firebaseapp.com",
+      databaseURL: "https://editor-test-4c47e-default-rtdb.firebaseio.com",
+      projectId: "editor-test-4c47e",
+      storageBucket: "editor-test-4c47e.appspot.com",
+      messagingSenderId: "465959812936",
+      appId: "1:465959812936:web:4216ba3ad0af767882bd7d"
     };
 
     // Inicializar la aplicación de Firebase
@@ -138,8 +161,8 @@
         forms[i].style.display = "none";
       }
 
-      document.getElementById(tabName).style.display = "block";
       document.getElementById(tabName + "-tab").classList.add("active");
+      document.getElementById(tabName).style.display = "block";
 
       if (tabName === "manager") {
         displayFormData();
@@ -147,39 +170,36 @@
     }
 
     function displayFormData() {
-      var cardsContainer = document.getElementById("cards-container");
-      cardsContainer.innerHTML = "";
-
       var formsRef = database.ref("forms");
       formsRef.once("value", function(snapshot) {
+        var cardsContainer = document.getElementById("cards-container");
+        cardsContainer.innerHTML = "";
+
         snapshot.forEach(function(childSnapshot) {
           var form = childSnapshot.val();
-          var key = childSnapshot.key;
-
           var card = document.createElement("div");
           card.classList.add("card");
 
-          var cardInfo = document.createElement("div");
-          cardInfo.classList.add("card-info");
+          var idInfo = document.createElement("p");
+          idInfo.classList.add("card-info");
+          idInfo.textContent = "ID: " + form.id;
+          card.appendChild(idInfo);
 
-          var id = document.createElement("p");
-          id.textContent = "ID: " + form.id;
+          var versionInfo = document.createElement("p");
+          versionInfo.classList.add("card-info");
+          versionInfo.textContent = "Version: " + form.newVersion;
+          card.appendChild(versionInfo);
 
-          var version = document.createElement("p");
-          version.textContent = "Version: " + form.newVersion;
+          var typeInfo = document.createElement("p");
+          typeInfo.classList.add("card-info");
+          typeInfo.textContent = "Type: " + form.updateType;
+          card.appendChild(typeInfo);
 
-          var updateType = document.createElement("p");
-          updateType.textContent = "Update Type: " + form.updateType;
+          var dateInfo = document.createElement("p");
+          dateInfo.classList.add("card-info");
+          dateInfo.textContent = "Date: " + formatDate(new Date(form.timestamp));
+          card.appendChild(dateInfo);
 
-          var timestamp = document.createElement("p");
-          timestamp.textContent = "Timestamp: " + formatDate(new Date(form.timestamp));
-
-          cardInfo.appendChild(id);
-          cardInfo.appendChild(version);
-          cardInfo.appendChild(updateType);
-          cardInfo.appendChild(timestamp);
-
-          card.appendChild(cardInfo);
           cardsContainer.appendChild(card);
         });
       });
@@ -243,16 +263,12 @@
             document.getElementById("noticeData").value = "";
             document.getElementById("startDate").value = "";
             document.getElementById("updateDescription").value = "";
-            document.getElementById("updateType").value = "";
+            document.getElementById("updateType").selectedIndex = 0;
 
-            // Limpiar el mensaje de error
             document.getElementById("error-message").textContent = "";
-
-            // Actualizar la visualización de los registros en la pestaña "Manager"
-            displayFormData();
           })
           .catch(function(error) {
-            console.error("Error saving form data: ", error);
+            document.getElementById("error-message").textContent = "Error al guardar los datos: " + error.message;
           });
       });
     }
