@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Editor</title>
+  <style>
+     * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      background-color: #f2f2f2;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background-color: #ccc;
+    }
+
+    .form-container {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #fff;
+      box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .form-group input[type="text"],
+    .form-group select {
+      width: 100%;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .form-group textarea {
+      width: 100%;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      resize: vertical;
+    }
+
+    .form-group button {
+      padding: 8px 16px;
+      background-color: #4CAF50;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .form-group .error-message {
+      color: red;
+    }
+    
+    .card {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .card-info {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .card p {
+      margin: 5px 0;
+    }
+  </style>
+ <!-- Agregar referencia a la biblioteca de Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+  <div class="tabs">
+    <div class="tab active" id="editor-tab" onclick="openTab('editor')">Editor</div>
+    <div class="tab" id="manager-tab" onclick="openTab('manager')">Manager</div>
+  </div>
+
+  <div id="editor" class="form-container">
+    <!-- Formulario del Editor -->
+  </div>
+
+  <div id="manager" class="form-container" style="display: none;">
+    <h2>Manager Tab</h2>
+    <div id="cards-container"></div>
+  </div>
+
+  <script>
+    // Configurar la conexión con Firebase
+    var firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_AUTH_DOMAIN",
+      databaseURL: "TU_DATABASE_URL",
+      projectId: "TU_PROJECT_ID",
+      storageBucket: "TU_STORAGE_BUCKET",
+      messagingSenderId: "TU_MESSAGING_SENDER_ID",
+      appId: "TU_APP_ID"
+    };
+
+    // Inicializar la aplicación de Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // Obtener una referencia a la base de datos
+    var database = firebase.database();
+
+    function openTab(tabName) {
+      var tabs = document.getElementsByClassName("tab");
+      var forms = document.getElementsByClassName("form-container");
+
+      for (var i = 0; i < tabs.length; i++) {
+        tabs[i].classList.remove("active");
+        forms[i].style.display = "none";
+      }
+
+      document.getElementById(tabName).style.display = "block";
+      document.getElementById(tabName + "-tab").classList.add("active");
+
+      if (tabName === "manager") {
+        displayFormData();
+      }
+    }
+
+    function displayFormData() {
+      var cardsContainer = document.getElementById("cards-container");
+      cardsContainer.innerHTML = "";
+
+      var formsRef = database.ref("forms");
+      formsRef.once("value", function(snapshot) {
+        snapshot.forEach(function(childSnapshot) {
+          var form = childSnapshot.val();
+          var key = childSnapshot.key;
+
+          var card = document.createElement("div");
+          card.classList.add("card");
+
+          var cardInfo = document.createElement("div");
+          cardInfo.classList.add("card-info");
+
+          var id = document.createElement("p");
+          id.textContent = "ID: " + form.id;
+
+          var version = document.createElement("p");
+          version.textContent = "Version: " + form.newVersion;
+
+          var updateType = document.createElement("p");
+          updateType.textContent = "Update Type: " + form.updateType;
+
+          var timestamp = document.createElement("p");
+          timestamp.textContent = "Timestamp: " + formatDate(new Date(form.timestamp));
+
+          cardInfo.appendChild(id);
+          cardInfo.appendChild(version);
+          cardInfo.appendChild(updateType);
+          cardInfo.appendChild(timestamp);
+
+          card.appendChild(cardInfo);
+          cardsContainer.appendChild(card);
+        });
+      });
+    }
+
+    function formatDate(date) {
+      // Código para formatear la fecha a tu preferencia
+      return date.toString();
+    }
+
+    function getNextId(callback) {
+      var formsRef = database.ref("forms");
+      formsRef
+        .orderByChild("id")
+        .limitToLast(1)
+        .once("value", function(snapshot) {
+          if (snapshot.exists()) {
+            var lastForm = snapshot.val();
+            var lastId = parseInt(lastForm.id);
+            var nextId = lastId + 1;
+            callback(nextId);
+          } else {
+            callback(0);
+          }
+        });
+    }
+
+    function submitForm() {
+      // Obtener los valores de los campos del formulario
+      var endDate = document.getElementById("endDate").value;
+      var lastModifiedDate = document.getElementById("lastModifiedDate").value;
+      var newVersion = document.getElementById("newVersion").value;
+      var noticeData = document.getElementById("noticeData").value;
+      var startDate = document.getElementById("startDate").value;
+      var updateDescription = document.getElementById("updateDescription").value;
+      var updateType = document.getElementById("updateType").value;
+
+      // Obtener el próximo ID disponible
+      getNextId(function(nextId) {
+        // Crear un objeto con los datos del formulario
+        var formData = {
+          id: nextId.toString(),
+          endDate: endDate,
+          lastModifiedDate: lastModifiedDate,
+          newVersion: newVersion,
+          noticeData: noticeData,
+          startDate: startDate,
+          updateDescription: updateDescription,
+          updateType: updateType,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        };
+
+        // Guardar los datos en Firebase
+        var newFormRef = database.ref("forms").push();
+        newFormRef.set(formData)
+          .then(function() {
+            // Limpiar los campos del formulario después de guardar los datos
+            document.getElementById("endDate").value = "";
+            document.getElementById("lastModifiedDate").value = "";
+            document.getElementById("newVersion").value = "";
+            document.getElementById("noticeData").value = "";
+            document.getElementById("startDate").value = "";
+            document.getElementById("updateDescription").value = "";
+            document.getElementById("updateType").value = "";
+
+            // Limpiar el mensaje de error
+            document.getElementById("error-message").textContent = "";
+
+            // Actualizar la visualización de los registros en la pestaña "Manager"
+            displayFormData();
+          })
+          .catch(function(error) {
+            console.error("Error saving form data: ", error);
+          });
+      });
+    }
+  </script>
+</body>
+</html>
